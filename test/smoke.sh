@@ -13,6 +13,9 @@ cd "$(dirname "$0")/.."
 # Cloud only allows `docker run -v` mounts below the build directory.
 dir=$(mktemp -d "$PWD/smoke-scratch.XXXXXX")
 trap 'rm -rf "$dir"' EXIT
+# mktemp makes 700; the container user is not the host build user under
+# Bitbucket's user-namespaced daemon, so open the dir up.
+chmod 777 "$dir"
 
 t() { echo "--- $1"; }
 
