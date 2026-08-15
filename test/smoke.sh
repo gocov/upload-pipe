@@ -9,30 +9,43 @@ set -euo pipefail
 IMG=${1:?usage: smoke.sh <image>}
 cd "$(dirname "$0")/.."
 
+# The scratch dir lives under the repo, not under $TMPDIR: Bitbucket
+# Cloud only allows `docker run -v` mounts below the build directory.
+dir=$(mktemp -d "$PWD/smoke-scratch.XXXXXX")
+trap 'rm -rf "$dir"' EXIT
+
 t() { echo "--- $1"; }
+
+# expect_contains <output> <needle>: assert with the output echoed on
+# failure, so a CI log shows what actually happened.
+expect_contains() {
+  grep -q "$2" <<<"$1" || {
+    echo "FAIL: output does not contain '$2'; got:"
+    printf '%s\n' "$1"
+    exit 1
+  }
+}
 
 t "missing TOKEN fails"
 out=$(docker run --rm -e FILES=coverage.out "$IMG" 2>&1) && { echo "expected exit 1"; exit 1; }
-grep -q "TOKEN is required" <<<"$out"
+expect_contains "$out" "TOKEN is required"
 
 t "missing TOKEN with FAIL_ON_ERROR=false succeeds with a warning"
 out=$(docker run --rm -e FILES=coverage.out -e FAIL_ON_ERROR=false "$IMG" 2>&1)
-grep -q "WARNING: TOKEN is required" <<<"$out"
+expect_contains "$out" "WARNING: TOKEN is required"
 
 t "no matching files fails"
 out=$(docker run --rm -e FILES='nope-*.out' -e TOKEN=dummy "$IMG" 2>&1) && { echo "expected exit 1"; exit 1; }
-grep -q "no coverage files matched" <<<"$out"
+expect_contains "$out" "no coverage files matched"
 
 t "glob expansion finds files (upload fails on the dummy token, not on matching)"
-dir=$(mktemp -d)
-trap 'rm -rf "$dir"' EXIT
 printf 'mode: atomic\n' >"$dir/a.out"
 printf 'mode: atomic\n' >"$dir/b.out"
 out=$(docker run --rm -e FILES='*.out' -e TOKEN=dummy -e SERVER=http://localhost:9 \
   -v "$dir":/work -w /work "$IMG" 2>&1) && { echo "expected exit 1"; exit 1; }
-grep -q "uploading a.out" <<<"$out"
-grep -q "uploading b.out" <<<"$out"
-grep -q "2 of 2 upload(s) failed" <<<"$out"
+expect_contains "$out" "uploading a.out"
+expect_contains "$out" "uploading b.out"
+expect_contains "$out" "2 of 2 upload(s) failed"
 
 if [ -n "${GOCOV_TOKEN:-}" ]; then
   t "dogfood: real upload of selftest coverage"
