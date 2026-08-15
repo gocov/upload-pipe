@@ -17,7 +17,7 @@ Add the following snippet to the script section of your
 `bitbucket-pipelines.yml` file:
 
 ```yaml
-- pipe: docker://gocov/upload-pipe:1
+- pipe: docker://gocov/upload-pipe:0
   variables:
     FILES: coverage.out
     TOKEN: $GOCOV_TOKEN
@@ -51,7 +51,7 @@ Basic example:
 - step:
     script:
       - go test -coverprofile=coverage.out ./...
-      - pipe: docker://gocov/upload-pipe:1
+      - pipe: docker://gocov/upload-pipe:0
         variables:
           FILES: coverage.out
           TOKEN: $GOCOV_TOKEN
@@ -72,7 +72,7 @@ Advanced example — parallel test steps merged into one report with
         name: Unit tests
         script:
           - go test -coverprofile=coverage.out ./... -run TestUnit
-          - pipe: docker://gocov/upload-pipe:1
+          - pipe: docker://gocov/upload-pipe:0
             variables:
               FILES: coverage.out
               TOKEN: $GOCOV_TOKEN
@@ -82,7 +82,7 @@ Advanced example — parallel test steps merged into one report with
         name: Integration tests
         script:
           - go test -coverprofile=coverage.out ./... -run TestIntegration
-          - pipe: docker://gocov/upload-pipe:1
+          - pipe: docker://gocov/upload-pipe:0
             variables:
               FILES: coverage.out
               TOKEN: $GOCOV_TOKEN
@@ -92,7 +92,7 @@ Advanced example — parallel test steps merged into one report with
 
 The image is multi-arch (amd64 + arm64), so the pipe also runs on arm
 self-hosted runners. Pin an exact version with
-`docker://gocov/upload-pipe:1.0.0`, or track the latest major with `:1`.
+`docker://gocov/upload-pipe:0.1.0`, or track the latest major with `:0`.
 
 Not just Go: the CLI auto-detects lcov, JaCoCo, Cobertura, Clover and
 SimpleCov profiles too, so `FILES` can point at any of those.
