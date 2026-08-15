@@ -1,0 +1,42 @@
+# CI for the pipe itself: shellcheck, an amd64 image build and offline
+# smoke tests, plus a real dogfood upload to the hosted service when the
+# GOCOV_TOKEN repository variable is set (skipped on forks without it).
+#
+# The multi-arch (amd64 + arm64) release build is NOT here: Bitbucket
+# Cloud runners disallow --privileged/QEMU, so buildx multi-arch builds
+# are unavailable. Releases run on the GitHub mirror instead — pushing a
+# semver tag (e.g. 0.1.0) triggers .github/workflows/release.yml, which
+# builds both arches and pushes docker.io/gocov/upload-pipe.
+image: atlassian/default-image:4
+
+pipelines:
+  default:
+    - step:
+        name: Lint
+        image: koalaman/shellcheck-alpine:stable
+        script:
+          - shellcheck pipe/pipe.sh test/smoke.sh
+    - step:
+        name: Generate selftest coverage
+        image: golang:1.26
+        script:
+          - cd selftest && go test -covermode=atomic -coverprofile=coverage.out ./...
+        artifacts:
+          - selftest/coverage.out
+    - step:
+        name: Build image and test
+        services:
+          - docker
+        script:
+          - docker build -t gocov/upload-pipe:ci .
+          # Size is UX — the pipe image is pulled on every step that uses
+          # it. Informational (the <20MB goal is non-blocking).
+          - docker image inspect -f 'image size {{.Size}} bytes' gocov/upload-pipe:ci
+          - bash test/smoke.sh gocov/upload-pipe:ci
+  tags:
+    "*.*.*":
+      - step:
+          name: Check release tag matches pipe.yml
+          script:
+            - grep -qx "image: gocov/upload-pipe:${BITBUCKET_TAG}" pipe.yml || { echo "pipe.yml image is not gocov/upload-pipe:${BITBUCKET_TAG}"; exit 1; }
+            - echo "tag ok — the GitHub mirror's release workflow pushes the image"

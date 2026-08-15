@@ -1,0 +1,51 @@
+name: release
+
+# Runs on the GitHub mirror (Bitbucket Cloud runners disallow the
+# --privileged/QEMU setup buildx multi-arch builds need). On a bare
+# semver tag push (0.1.0): build linux/amd64 + linux/arm64 and push
+# docker.io/gocov/upload-pipe as :0.1.0, the floating major :0 that
+# `pipe: docker://gocov/upload-pipe:0` resolves, and :latest.
+#
+# Repository secrets: DOCKERHUB_USERNAME, DOCKERHUB_TOKEN (a Docker Hub
+# access token with write scope, not the account password).
+on:
+  push:
+    tags: ["[0-9]+.[0-9]+.[0-9]+"]
+
+permissions:
+  contents: read
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check pipe.yml version matches the tag
+        run: |
+          grep -qx "image: gocov/upload-pipe:${GITHUB_REF_NAME}" pipe.yml ||
+            { echo "pipe.yml image is not gocov/upload-pipe:${GITHUB_REF_NAME}"; exit 1; }
+
+      # binfmt registers qemu handlers so the arm64 stage's RUN steps can
+      # execute under emulation; ubuntu runners ship buildx itself.
+      - name: Set up multi-arch build
+        run: |
+          docker run --privileged --rm tonistiigi/binfmt --install arm64
+          docker buildx create --use
+
+      - name: Log in to Docker Hub
+        env:
+          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+          DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+        run: echo "$DOCKERHUB_TOKEN" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
+
+      - name: Build and push
+        run: |
+          major="${GITHUB_REF_NAME%%.*}"
+          docker buildx build \
+            --platform linux/amd64,linux/arm64 \
+            --provenance=false \
+            -t "docker.io/gocov/upload-pipe:${GITHUB_REF_NAME}" \
+            -t "docker.io/gocov/upload-pipe:${major}" \
+            -t docker.io/gocov/upload-pipe:latest \
+            --push .

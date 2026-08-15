@@ -1,0 +1,35 @@
+# Pipe metadata for the Atlassian pipe catalog. The image tag below is
+# the released pipe version and must match the git tag being released —
+# CI enforces this.
+name: gocov coverage upload
+image: gocov/upload-pipe:0.1.0
+category: Code quality
+description: >-
+  Upload Go test coverage to gocov — PR diff coverage, commit statuses and
+  badges, hosted or self-hosted.
+repository: https://bitbucket.org/gocov/upload-pipe
+maintainer:
+  name: gocov
+  website: https://app.gocov.dev
+vendor:
+  name: gocov
+  website: https://app.gocov.dev
+tags:
+  - go
+  - golang
+  - coverage
+  - testing
+  - code quality
+variables:
+  - name: FILES
+    default: ""
+  - name: TOKEN
+    default: ""
+  - name: PART
+    default: ""
+  - name: SERVER
+    default: https://app.gocov.dev
+  - name: FAIL_ON_ERROR
+    default: "true"
+  - name: DEBUG
+    default: "false"
