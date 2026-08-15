@@ -1,11 +1,12 @@
 # Pipe metadata for the Atlassian pipe catalog. The image tag below is
-# the released pipe version and must match the git tag being released —
-# CI enforces this.
+# the released pipe version and must match the git tag being released;
+# CI enforces this. ASCII only: the catalog's validator fetches this
+# file without a charset and mojibakes any multibyte character.
 name: gocov coverage upload
-image: gocov/upload-pipe:0.1.0
+image: gocov/upload-pipe:0.1.1
 category: Code quality
 description: >-
-  Upload Go test coverage to gocov — PR diff coverage, commit statuses and
+  Upload Go test coverage to gocov: PR diff coverage, commit statuses and
   badges, hosted or self-hosted.
 repository: https://bitbucket.org/gocov/upload-pipe
 maintainer:

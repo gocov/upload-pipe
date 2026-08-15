@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.1
+
+- pipe.yml is ASCII-only so the Atlassian pipe catalog's validator can
+  parse it. No functional changes.
+
 ## 0.1.0
 
 - Initial release: uploads Go (and lcov/JaCoCo/Cobertura/Clover/SimpleCov)
