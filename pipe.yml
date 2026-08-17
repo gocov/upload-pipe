@@ -3,11 +3,11 @@
 # CI enforces this. ASCII only: the catalog's validator fetches this
 # file without a charset and mojibakes any multibyte character.
 name: gocov coverage upload
-image: gocov/upload-pipe:0.1.1
+image: gocov/upload-pipe:0.2.0
 category: Code quality
 description: >-
-  Upload Go test coverage to gocov: PR diff coverage, commit statuses and
-  badges, hosted or self-hosted.
+  Upload test coverage (Go, JS/TS, Java, Python & more) to gocov: PR diff
+  coverage, commit statuses and badges, hosted or self-hosted.
 repository: https://bitbucket.org/gocov/upload-pipe
 maintainer:
   name: gocov
@@ -18,6 +18,9 @@ vendor:
 tags:
   - go
   - golang
+  - javascript
+  - python
+  - java
   - coverage
   - testing
   - code quality

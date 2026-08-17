@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.2.0
+
+- Bake gocov CLI v0.9.0, which merges multiple coverage reports per commit:
+  give each matrix job's upload a distinct `PART` and the server combines
+  them into one report (status, badge, gate, PR comment).
+- Broaden the catalog description and tags to reflect multi-language support
+  (JavaScript/TypeScript, Java, Python) alongside Go.
+- Security: enable `DEBUG=true` command tracing only after the token is
+  exported, so the trace can no longer print `export GOCOV_TOKEN=<token>`.
+
 ## 0.1.1
 
 - pipe.yml is ASCII-only so the Atlassian pipe catalog's validator can

@@ -7,9 +7,6 @@
 # the image at build time — nothing is downloaded at runtime.
 set -eo pipefail
 
-# Pipe convention: DEBUG=true traces every command.
-[ "${DEBUG:-}" = "true" ] && set -x
-
 FAIL_ON_ERROR=${FAIL_ON_ERROR:-true}
 
 info() { printf '\033[36mINFO: %s\033[0m\n' "$1"; }
@@ -31,6 +28,10 @@ fail() {
 
 export GOCOV_TOKEN="$TOKEN"
 export GOCOV_SERVER="${SERVER:-https://app.gocov.dev}"
+
+# Pipe convention: DEBUG=true traces every command. Enabled only *after* the
+# token is exported, so the trace never prints `export GOCOV_TOKEN=<token>`.
+[ "${DEBUG:-}" = "true" ] && set -x
 
 # globstar is a bash >= 4 feature; without it "**" still matches one level
 # as "*", so degrade silently rather than erroring on old bash.
