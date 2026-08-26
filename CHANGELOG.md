@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.3.0
+
+- Bake gocov CLI v0.12.0 (was v0.9.0). Uploads from Bitbucket Pipelines now
+  carry the provenance the upload page shows — commit subject and author,
+  the build number and a link back to the pipeline run — and PR builds are
+  measured against the default branch when the PR's own branch has no
+  earlier passing upload, so before -> after and diff coverage appear on the
+  builds that need them most.
+
 ## 0.2.0
 
 - Bake gocov CLI v0.9.0, which merges multiple coverage reports per commit:
