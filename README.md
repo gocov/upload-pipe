@@ -101,7 +101,7 @@ SimpleCov profiles too, so `FILES` can point at any of those.
 
 If you'd like help with this pipe, or you have an issue or feature
 request, [open an issue](https://bitbucket.org/gocov/upload-pipe/issues)
-or check the [gocov docs](https://app.gocov.dev).
+or check the [gocov docs](https://docs.gocov.dev).
 
 ## License
 
