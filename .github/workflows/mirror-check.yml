@@ -1,0 +1,34 @@
+name: mirror-check
+
+# Proves the Bitbucket mirror credentials actually work, on demand —
+# after first setting the BITBUCKET_MIRROR_* secrets, or after rotating
+# the app password. Reads the mirror, pushes a throwaway tag, deletes it.
+# Nothing in the real repo history is touched.
+
+on:
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Read and write against the Bitbucket mirror
+        env:
+          BB_USER: ${{ secrets.BITBUCKET_MIRROR_USERNAME }}
+          BB_APP_PASSWORD: ${{ secrets.BITBUCKET_MIRROR_APP_PASSWORD }}
+        run: |
+          set -euo pipefail
+          [ -n "$BB_USER" ] || { echo "BITBUCKET_MIRROR_USERNAME is empty"; exit 1; }
+          [ -n "$BB_APP_PASSWORD" ] || { echo "BITBUCKET_MIRROR_APP_PASSWORD is empty"; exit 1; }
+          url="https://$BB_USER:$BB_APP_PASSWORD@bitbucket.org/gocov/upload-pipe.git"
+          git ls-remote "$url" HEAD >/dev/null
+          echo "read: ok (credentials accepted, repo visible)"
+          git init -q probe && cd probe
+          git config user.name probe && git config user.email probe@invalid
+          git commit -q --allow-empty -m "mirror write probe"
+          git push -q "$url" HEAD:refs/tags/mirror-check
+          echo "write: ok (app password has repository write)"
+          git push -q "$url" :refs/tags/mirror-check
+          echo "cleanup: ok (probe tag deleted)"
