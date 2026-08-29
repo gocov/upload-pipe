@@ -13,6 +13,14 @@ name: release
 #
 # Repository secrets: DOCKERHUB_USERNAME, DOCKERHUB_TOKEN (a Docker Hub
 # access token with write scope, not the account password).
+#
+# A release has to reach both remotes — Bitbucket carries the Atlassian
+# catalog entry, GitHub runs this build. On the normal path that is
+# automatic: tag-on-release-merge tags and mirrors to Bitbucket itself.
+# Only the hand-cut escape hatch pushes a tag directly, and there the tag
+# must go to both remotes — run scripts/setup-remotes.sh once per clone
+# and `git push origin <tag>` writes to both. Either way,
+# verify-release.sh in the gocov repo checks the tag landed on both.
 
 on:
   push:
