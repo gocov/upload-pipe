@@ -61,19 +61,17 @@ jobs:
         # this warns instead of failing: the release itself is fine, the
         # mirror push just has to happen by hand.
         env:
-          BB_USER: ${{ secrets.BITBUCKET_MIRROR_USERNAME }}
           BB_APP_PASSWORD: ${{ secrets.BITBUCKET_MIRROR_APP_PASSWORD }}
           TAG: ${{ steps.v.outputs.tag }}
         run: |
-          if [ -z "$BB_USER" ] || [ -z "$BB_APP_PASSWORD" ]; then
-            echo "::warning::Bitbucket mirror secrets are not set — push main and tag $TAG to Bitbucket by hand"
+          if [ -z "$BB_APP_PASSWORD" ]; then
+            echo "::warning::BITBUCKET_MIRROR_APP_PASSWORD is not set — push main and tag $TAG to Bitbucket by hand"
             exit 0
           fi
-          # The username is an Atlassian account email; percent-encode it
-          # (and the token) or the @ breaks the URL's authority part.
-          user=$(printf %s "$BB_USER" | jq -sRr @uri)
+          # Scoped API tokens authenticate git over HTTPS with the fixed
+          # username x-bitbucket-api-token-auth — not the account email.
           pass=$(printf %s "$BB_APP_PASSWORD" | jq -sRr @uri)
-          git push "https://$user:$pass@bitbucket.org/gocov/upload-pipe.git" \
+          git push "https://x-bitbucket-api-token-auth:$pass@bitbucket.org/gocov/upload-pipe.git" \
             "HEAD:refs/heads/main" "refs/tags/$TAG"
 
   release:

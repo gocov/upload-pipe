@@ -16,18 +16,14 @@ jobs:
     steps:
       - name: Read and write against the Bitbucket mirror
         env:
-          BB_USER: ${{ secrets.BITBUCKET_MIRROR_USERNAME }}
           BB_APP_PASSWORD: ${{ secrets.BITBUCKET_MIRROR_APP_PASSWORD }}
         run: |
           set -euo pipefail
-          [ -n "$BB_USER" ] || { echo "BITBUCKET_MIRROR_USERNAME is empty"; exit 1; }
           [ -n "$BB_APP_PASSWORD" ] || { echo "BITBUCKET_MIRROR_APP_PASSWORD is empty"; exit 1; }
-          # The username is an Atlassian account email; its @ (and any
-          # other reserved character) must be percent-encoded or curl
-          # misparses the URL's authority part.
-          user=$(printf %s "$BB_USER" | jq -sRr @uri)
+          # Scoped API tokens authenticate git over HTTPS with the fixed
+          # username x-bitbucket-api-token-auth — not the account email.
           pass=$(printf %s "$BB_APP_PASSWORD" | jq -sRr @uri)
-          url="https://$user:$pass@bitbucket.org/gocov/upload-pipe.git"
+          url="https://x-bitbucket-api-token-auth:$pass@bitbucket.org/gocov/upload-pipe.git"
           git ls-remote "$url" HEAD >/dev/null
           echo "read: ok (credentials accepted, repo visible)"
           git init -q probe && cd probe
