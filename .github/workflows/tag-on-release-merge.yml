@@ -1,0 +1,82 @@
+name: tag-on-release-merge
+
+# The merge half of the cross-repo bump: a gocov release opens a bump PR
+# here carrying the `release` label, and merging that PR is the release
+# decision — so this tags the merge commit and runs the release workflow.
+# The version is read from pipe.yml, which the bump PR updated and which
+# release.yml asserts against the tag anyway: pipe.yml is the one place
+# the pipe's version is written down.
+#
+# The tag is pushed with GITHUB_TOKEN, which starts no workflow runs, so
+# release.yml is called directly rather than trusting the tag event.
+#
+# Only PRs actually labeled `release` do any of this; every other merge
+# is ignored.
+
+on:
+  pull_request:
+    types: [closed]
+
+permissions:
+  contents: read
+
+jobs:
+  tag:
+    if: github.event.pull_request.merged == true && contains(github.event.pull_request.labels.*.name, 'release')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    outputs:
+      tag: ${{ steps.v.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.merge_commit_sha }}
+          fetch-depth: 0
+          fetch-tags: true
+
+      - name: Read the version pipe.yml ships
+        id: v
+        run: |
+          tag=$(sed -n 's|^image: gocov/upload-pipe:\([0-9][0-9.]*\)$|\1|p' pipe.yml)
+          [ -n "$tag" ] || { echo "could not read a version from pipe.yml" >&2; exit 1; }
+          if git rev-parse -q --verify "refs/tags/$tag" >/dev/null; then
+            echo "tag $tag already exists — did the bump PR forget to bump pipe.yml?" >&2
+            exit 1
+          fi
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          echo "releasing $tag"
+
+      - name: Tag the merge commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag "${{ steps.v.outputs.tag }}" "${{ github.event.pull_request.merge_commit_sha }}"
+          git push origin "refs/tags/${{ steps.v.outputs.tag }}"
+
+      - name: Mirror to Bitbucket
+        # The Atlassian pipe catalog reads the Bitbucket repo, and a tag
+        # that lands only on GitHub publishes nothing there — the exact
+        # drift verify-release exists to catch. Without the mirror secrets
+        # this warns instead of failing: the release itself is fine, the
+        # mirror push just has to happen by hand.
+        env:
+          BB_USER: ${{ secrets.BITBUCKET_MIRROR_USERNAME }}
+          BB_APP_PASSWORD: ${{ secrets.BITBUCKET_MIRROR_APP_PASSWORD }}
+          TAG: ${{ steps.v.outputs.tag }}
+        run: |
+          if [ -z "$BB_USER" ] || [ -z "$BB_APP_PASSWORD" ]; then
+            echo "::warning::Bitbucket mirror secrets are not set — push main and tag $TAG to Bitbucket by hand"
+            exit 0
+          fi
+          git push "https://$BB_USER:$BB_APP_PASSWORD@bitbucket.org/gocov/upload-pipe.git" \
+            "HEAD:refs/heads/main" "refs/tags/$TAG"
+
+  release:
+    needs: tag
+    uses: ./.github/workflows/release.yml
+    with:
+      tag: ${{ needs.tag.outputs.tag }}
+    secrets: inherit
+    permissions:
+      contents: read
