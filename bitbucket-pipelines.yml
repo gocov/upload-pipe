@@ -15,7 +15,13 @@ pipelines:
         name: Lint
         image: koalaman/shellcheck-alpine:stable
         script:
-          - shellcheck pipe/pipe.sh test/smoke.sh
+          - shellcheck pipe/pipe.sh test/smoke.sh scripts/check-pins.sh
+    # Its own step rather than a line in Lint: that image is busybox and
+    # has no bash. Cheap, and it fails before the image build.
+    - step:
+        name: Check version pins agree
+        script:
+          - bash scripts/check-pins.sh
     - step:
         name: Generate selftest coverage
         image: golang:1.26
