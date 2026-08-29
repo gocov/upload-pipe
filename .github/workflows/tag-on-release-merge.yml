@@ -69,7 +69,11 @@ jobs:
             echo "::warning::Bitbucket mirror secrets are not set — push main and tag $TAG to Bitbucket by hand"
             exit 0
           fi
-          git push "https://$BB_USER:$BB_APP_PASSWORD@bitbucket.org/gocov/upload-pipe.git" \
+          # The username is an Atlassian account email; percent-encode it
+          # (and the token) or the @ breaks the URL's authority part.
+          user=$(printf %s "$BB_USER" | jq -sRr @uri)
+          pass=$(printf %s "$BB_APP_PASSWORD" | jq -sRr @uri)
+          git push "https://$user:$pass@bitbucket.org/gocov/upload-pipe.git" \
             "HEAD:refs/heads/main" "refs/tags/$TAG"
 
   release:

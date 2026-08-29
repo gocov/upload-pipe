@@ -22,7 +22,12 @@ jobs:
           set -euo pipefail
           [ -n "$BB_USER" ] || { echo "BITBUCKET_MIRROR_USERNAME is empty"; exit 1; }
           [ -n "$BB_APP_PASSWORD" ] || { echo "BITBUCKET_MIRROR_APP_PASSWORD is empty"; exit 1; }
-          url="https://$BB_USER:$BB_APP_PASSWORD@bitbucket.org/gocov/upload-pipe.git"
+          # The username is an Atlassian account email; its @ (and any
+          # other reserved character) must be percent-encoded or curl
+          # misparses the URL's authority part.
+          user=$(printf %s "$BB_USER" | jq -sRr @uri)
+          pass=$(printf %s "$BB_APP_PASSWORD" | jq -sRr @uri)
+          url="https://$user:$pass@bitbucket.org/gocov/upload-pipe.git"
           git ls-remote "$url" HEAD >/dev/null
           echo "read: ok (credentials accepted, repo visible)"
           git init -q probe && cd probe
