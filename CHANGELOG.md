@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.4.0
+
+- Bake gocov CLI v0.13.1 (was v0.12.0).
+
 ## 0.3.0
 
 - Bake gocov CLI v0.12.0 (was v0.9.0). Uploads from Bitbucket Pipelines now
