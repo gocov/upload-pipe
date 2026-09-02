@@ -50,13 +50,18 @@ expect_contains "$out" "uploading a.out"
 expect_contains "$out" "uploading b.out"
 expect_contains "$out" "2 of 2 upload(s) failed"
 
-t "OIDC token present, no TOKEN: attempts the upload (soft), never demands a token"
-# With an OIDC identity token in the env and no TOKEN, the pipe must not fail
-# asking for one; it uploads soft, so an unreachable server is a warning and
-# exit 0, not a failed step.
+t "OIDC token present, no TOKEN: attempts the upload, never demands a token"
+# With an OIDC identity token in the env and no TOKEN, the pipe must take the
+# OIDC path (attempt the upload) rather than fail asking for a token. The
+# upload itself fails here (unreachable server), so FAIL_ON_ERROR=false keeps
+# the step green — that isolates the behaviour under test (path choice) from
+# whether the pinned CLI actually speaks OIDC yet.
+# NOTE: asserting the request truly carries oidc_token needs a fake server
+# and a CLI that speaks OIDC; that lands with the CLI-version bump.
 out=$(docker run --rm -e FILES='*.out' -e BITBUCKET_STEP_OIDC_TOKEN=dummy.jwt.token \
-  -e SERVER=http://localhost:9 -v "$dir":/work -w /work "$IMG" 2>&1)
+  -e FAIL_ON_ERROR=false -e SERVER=http://localhost:9 -v "$dir":/work -w /work "$IMG" 2>&1)
 expect_contains "$out" "uploading a.out"
+expect_contains "$out" "uploading via OIDC"
 if grep -q "TOKEN is required" <<<"$out"; then
   echo "FAIL: demanded a token despite an OIDC token being present; got:"
   printf '%s\n' "$out"

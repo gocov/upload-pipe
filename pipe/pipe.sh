@@ -24,19 +24,18 @@ fail() {
 [ -n "${FILES:-}" ] ||
   fail "FILES is required: comma-separated coverage profile path(s), globs allowed"
 
-# Without a token the pipe can still upload via OIDC: a step with `oidc: true`
-# (and the gocov server named in its `oidc.audiences`) is handed a signed
-# identity token in $BITBUCKET_STEP_OIDC_TOKEN, which the CLI reads from the
+# Without a token the pipe can still upload via OIDC: a step that lists
+# gocov's server under its `oidc.audiences` is handed a signed identity
+# token in $BITBUCKET_STEP_OIDC_TOKEN, which the CLI reads from the
 # environment and the server verifies. Leave GOCOV_TOKEN unset so the CLI
-# takes that path, and treat the upload as "soft" — the CLI exits 0 on a
-# refusal, so the step never fails over coverage plumbing.
-soft=0
+# takes that path; the upload is otherwise normal and honours FAIL_ON_ERROR
+# (the CLI exits 0 on a clean OIDC refusal, so a non-zero exit is a real
+# error worth surfacing).
 if [ -z "${TOKEN:-}" ]; then
   if [ -n "${BITBUCKET_STEP_OIDC_TOKEN:-}" ]; then
-    soft=1
-    info "no token — uploading via OIDC (oidc: true), verified by the server"
+    info "no token — uploading via OIDC, verified by the server"
   else
-    fail "TOKEN is required: pass the repo's upload token from a secured repository variable, or set 'oidc: true' on the step (with your gocov server URL in oidc.audiences) to upload via OIDC — see the README"
+    fail "TOKEN is required: pass the repo's upload token from a secured repository variable, or add an 'oidc.audiences' entry with your gocov server URL to the step to upload via OIDC — see the README"
   fi
 else
   export GOCOV_TOKEN="$TOKEN"
@@ -75,15 +74,7 @@ args=()
 failures=0
 for f in "${files[@]}"; do
   info "uploading $f"
-  if [ "$soft" = "1" ]; then
-    # Belt and braces for the secret-free promise: a CLI new enough to know
-    # OIDC mode already exits 0 on refusal; an older pinned CLI would exit 1
-    # with "upload token required" — swallow that too rather than fail.
-    gocov upload ${args[@]+"${args[@]}"} "$f" ||
-      warn "upload of $f did not land — see the log above"
-  else
-    gocov upload ${args[@]+"${args[@]}"} "$f" || failures=$((failures + 1))
-  fi
+  gocov upload ${args[@]+"${args[@]}"} "$f" || failures=$((failures + 1))
 done
 [ "$failures" -eq 0 ] || fail "$failures of ${#files[@]} upload(s) failed"
 printf '\033[32m✔ uploaded %d file(s)\033[0m\n' "${#files[@]}"
