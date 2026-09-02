@@ -28,7 +28,7 @@ Add the following snippet to the script section of your
 | Variable        | Usage |
 |-----------------|-------|
 | FILES (*)       | Coverage profile(s) to upload. Comma-separated, globs allowed (`coverage.out`, `cover/*.out`). |
-| TOKEN (*)       | gocov upload token, from a [secured repository variable](https://support.atlassian.com/bitbucket-cloud/docs/variables-and-secrets/). |
+| TOKEN           | gocov upload token, from a [secured repository variable](https://support.atlassian.com/bitbucket-cloud/docs/variables-and-secrets/). Optional when the step uploads via [OIDC](#uploading-without-a-token) instead. |
 | PART            | Label for this upload when a build's coverage is split across parallel steps; the server merges parts for the same commit. Requires a pipe release whose pinned CLI has multi-part upload support. |
 | SERVER          | gocov server URL; override when self-hosting. Default: `https://app.gocov.dev`. |
 | FAIL_ON_ERROR   | Fail the step when the upload fails. Set `false` to only warn. Default: `true` — honest failures; flip this if you'd rather never block CI on coverage upload. |
@@ -42,6 +42,36 @@ A gocov upload token for the repo, from the gocov dashboard. In your
 Bitbucket repo go to **Repository settings → Repository variables**, name
 it `GOCOV_TOKEN`, paste the token and tick **Secured**. That's the only
 setup step.
+
+## Uploading without a token
+
+You can skip the `GOCOV_TOKEN` variable entirely and let Bitbucket hand the
+step a short-lived, signed OIDC identity token instead. Name your gocov
+server under the step's `oidc.audiences` (this both turns OIDC on and binds
+the token to your server so it can't be replayed elsewhere) and leave `TOKEN`
+unset; the pipe reads the token Bitbucket injects and the server verifies
+which repository it came from.
+
+```yaml
+- step:
+    oidc:
+      audiences:
+        - https://app.gocov.dev   # your gocov server URL
+    script:
+      - go test ./... -covermode=atomic -coverprofile=coverage.out
+      - pipe: docker://gocov/upload-pipe:0
+        variables:
+          FILES: coverage.out
+```
+
+The audience must equal your gocov server's URL. The repository must already
+be tracked in a workspace connected to Bitbucket — the same connection that
+posts the build status and Code Insights report; OIDC replaces only the
+upload token, not that connection. A `TOKEN` always takes precedence, and a
+rejected OIDC upload logs the reason and does not fail the step. Full
+details: [uploading without a token](https://docs.gocov.dev/bitbucket-pipelines/#uploading-without-a-token).
+
+Requires a pipe release whose pinned gocov CLI includes OIDC support.
 
 ## Examples
 

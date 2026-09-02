@@ -23,10 +23,23 @@ fail() {
 
 [ -n "${FILES:-}" ] ||
   fail "FILES is required: comma-separated coverage profile path(s), globs allowed"
-[ -n "${TOKEN:-}" ] ||
-  fail "TOKEN is required: pass the repo's upload token from a secured repository variable (see the README)"
 
-export GOCOV_TOKEN="$TOKEN"
+# Without a token the pipe can still upload via OIDC: a step that lists
+# gocov's server under its `oidc.audiences` is handed a signed identity
+# token in $BITBUCKET_STEP_OIDC_TOKEN, which the CLI reads from the
+# environment and the server verifies. Leave GOCOV_TOKEN unset so the CLI
+# takes that path; the upload is otherwise normal and honours FAIL_ON_ERROR
+# (the CLI exits 0 on a clean OIDC refusal, so a non-zero exit is a real
+# error worth surfacing).
+if [ -z "${TOKEN:-}" ]; then
+  if [ -n "${BITBUCKET_STEP_OIDC_TOKEN:-}" ]; then
+    info "no token — uploading via OIDC, verified by the server"
+  else
+    fail "TOKEN is required: pass the repo's upload token from a secured repository variable, or add an 'oidc.audiences' entry with your gocov server URL to the step to upload via OIDC — see the README"
+  fi
+else
+  export GOCOV_TOKEN="$TOKEN"
+fi
 export GOCOV_SERVER="${SERVER:-https://app.gocov.dev}"
 
 # Pipe convention: DEBUG=true traces every command. Enabled only *after* the
