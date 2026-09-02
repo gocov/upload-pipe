@@ -50,6 +50,19 @@ expect_contains "$out" "uploading a.out"
 expect_contains "$out" "uploading b.out"
 expect_contains "$out" "2 of 2 upload(s) failed"
 
+t "OIDC token present, no TOKEN: attempts the upload (soft), never demands a token"
+# With an OIDC identity token in the env and no TOKEN, the pipe must not fail
+# asking for one; it uploads soft, so an unreachable server is a warning and
+# exit 0, not a failed step.
+out=$(docker run --rm -e FILES='*.out' -e BITBUCKET_STEP_OIDC_TOKEN=dummy.jwt.token \
+  -e SERVER=http://localhost:9 -v "$dir":/work -w /work "$IMG" 2>&1)
+expect_contains "$out" "uploading a.out"
+if grep -q "TOKEN is required" <<<"$out"; then
+  echo "FAIL: demanded a token despite an OIDC token being present; got:"
+  printf '%s\n' "$out"
+  exit 1
+fi
+
 if [ -n "${GOCOV_TOKEN:-}" ]; then
   t "dogfood: real upload of selftest coverage"
   docker run --rm -e FILES=selftest/coverage.out -e TOKEN="$GOCOV_TOKEN" \
