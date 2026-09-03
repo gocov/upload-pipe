@@ -3,7 +3,7 @@
 # CI enforces this. ASCII only: the catalog's validator fetches this
 # file without a charset and mojibakes any multibyte character.
 name: gocov coverage upload
-image: gocov/upload-pipe:0.8.0
+image: gocov/upload-pipe:0.9.0
 category: Code quality
 description: >-
   Upload test coverage (Go, JS/TS, Java, Python & more) to gocov: PR diff
