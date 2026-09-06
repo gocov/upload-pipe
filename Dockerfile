@@ -9,7 +9,7 @@
 # buildx — the multi-arch release build runs on the GitHub mirror).
 FROM alpine:3.22 AS fetch
 ARG TARGETARCH=amd64
-ARG GOCOV_VERSION=v0.21.0
+ARG GOCOV_VERSION=v0.22.0
 RUN apk add --no-cache curl
 WORKDIR /dl
 RUN base="https://github.com/gocov/gocov/releases/download/${GOCOV_VERSION}" && \
