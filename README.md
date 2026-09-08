@@ -1,6 +1,6 @@
 # Bitbucket Pipelines Pipe: gocov coverage upload
 
-[![coverage](https://app.gocov.dev/badge/gocov/upload-pipe.svg)](https://app.gocov.dev/repos/gocov/upload-pipe?ref=badge)
+[![coverage](https://app.gocov.dev/badge/github/gocov/upload-pipe.svg)](https://app.gocov.dev/repos/github/gocov/upload-pipe?ref=badge)
 
 Upload Go test coverage to [gocov](https://app.gocov.dev) from Bitbucket
 Pipelines: PR diff coverage, commit statuses, Code Insights reports and a
@@ -90,7 +90,7 @@ Basic example:
 Then add the badge to your README:
 
 ```markdown
-[![coverage](https://app.gocov.dev/badge/{workspace}/{repo}.svg)](https://app.gocov.dev/repos/{workspace}/{repo}?ref=badge)
+[![coverage](https://app.gocov.dev/badge/bitbucket/{workspace}/{repo}.svg)](https://app.gocov.dev/repos/bitbucket/{workspace}/{repo}?ref=badge)
 ```
 
 Advanced example — parallel test steps merged into one report with
