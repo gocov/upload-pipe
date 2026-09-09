@@ -1,6 +1,7 @@
 # CI for the pipe itself: shellcheck, an amd64 image build and offline
-# smoke tests, plus a real dogfood upload to the hosted service when the
-# GOCOV_TOKEN repository variable is set (skipped on forks without it).
+# smoke tests, then a real dogfood upload of the selftest profile to the
+# hosted service — through the step's OIDC identity token, so no secret is
+# involved and forks simply get a clean refusal.
 #
 # The multi-arch (amd64 + arm64) release build is NOT here: Bitbucket
 # Cloud runners disallow --privileged/QEMU, so buildx multi-arch builds
@@ -31,6 +32,9 @@ pipelines:
           - selftest/coverage.out
     - step:
         name: Build image and test
+        oidc:
+          audiences:
+            - https://app.gocov.dev   # the dogfood upload's identity token
         services:
           - docker
         script:
@@ -39,6 +43,13 @@ pipelines:
           # it. Informational (the <20MB goal is non-blocking).
           - docker image inspect -f 'image size {{.Size}} bytes' gocov/upload-pipe:ci
           - bash test/smoke.sh gocov/upload-pipe:ci
+          # Dogfood with the image just built, not the published pipe —
+          # `pipe: docker://gocov/upload-pipe:0` would exercise the previous
+          # release, not this commit. The BITBUCKET_* variables carry the
+          # OIDC token and the commit/branch/PR the CLI auto-detects;
+          # selftest/coverage.out is the artifact of the coverage step.
+          - env | grep '^BITBUCKET_' > bitbucket.env
+          - docker run --rm --env-file bitbucket.env -e FILES=coverage.out -v "$PWD/selftest":/work -w /work gocov/upload-pipe:ci
   tags:
     "*.*.*":
       - step:
