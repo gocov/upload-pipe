@@ -1,0 +1,36 @@
+name: ci
+
+# The pre-merge gate on the GitHub mirror. The Bitbucket pipeline runs the
+# same lint and smoke tests, but only once a change reaches Bitbucket —
+# after it is merged here. A gocov release opens a bump PR here and
+# auto-merges it when these checks pass, so they have to prove the new
+# CLI works in the pipe before the merge that releases it: both
+# architectures build (the release checksum-verifies the pinned binary),
+# the offline smoke tests pass, and test/e2e.sh uploads through the pipe
+# to a fake server and checks what the CLI sent.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, ubuntu-24.04-arm]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v7
+      - run: shellcheck pipe/pipe.sh test/smoke.sh test/e2e.sh scripts/check-pins.sh
+      - run: bash scripts/check-pins.sh
+      - name: Build the image
+        run: docker build -t gocov/upload-pipe:ci .
+      - name: Smoke tests
+        run: bash test/smoke.sh gocov/upload-pipe:ci
+      - name: End-to-end upload
+        run: bash test/e2e.sh gocov/upload-pipe:ci
