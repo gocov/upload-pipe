@@ -18,7 +18,17 @@ permissions:
   contents: read
 
 jobs:
-  test:
+  # The same job names as gocov-action and gitlab-component (lint +
+  # e2e (<os>)), which gocov's release requires before it auto-merges a
+  # bump PR.
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - run: shellcheck pipe/pipe.sh test/smoke.sh test/e2e.sh scripts/check-pins.sh
+      - run: bash scripts/check-pins.sh
+
+  e2e:
     strategy:
       fail-fast: false
       matrix:
@@ -26,8 +36,6 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v7
-      - run: shellcheck pipe/pipe.sh test/smoke.sh test/e2e.sh scripts/check-pins.sh
-      - run: bash scripts/check-pins.sh
       - name: Build the image
         # With the platform named, as release.yml builds it. On the arm64
         # runner, e2e.sh then proves the arm64 image bakes the arm64 CLI.

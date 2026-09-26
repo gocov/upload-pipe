@@ -53,14 +53,14 @@ if [ "$(echo "$cli" | wc -l | tr -d ' ')" -ne 1 ]; then
 fi
 
 # The newest changelog entry states the CLI it bakes in the phrase the
-# entries have always used — "Bake gocov CLI v0.12.0" — which is the claim
-# users read. Only that phrase is matched, not every version in the entry:
-# the same sentence carries the version it replaces ("(was v0.9.0)"), and
-# that one is supposed to differ. An entry that changes nothing about the
-# CLI need not say anything — 0.1.1 did not — so silence is fine and a
-# contradiction is not.
+# entries use — "Bake gocov CLI v0.12.0 (was v0.11.0)" — which is the
+# claim users read. Only the first "gocov CLI vX" on a line is matched,
+# not the version it replaces, which is supposed to differ. An entry that
+# changes nothing about the CLI need not say anything — 0.1.1 did not — so
+# silence is fine and a contradiction is not. The same check runs in
+# gocov-action and gitlab-component.
 entry=$(awk '/^## /{n++} n==1' CHANGELOG.md)
-baked=$(echo "$entry" | sed -n 's/.*[Bb]ake gocov CLI \(v[0-9][0-9.]*\).*/\1/p' | head -1)
+baked=$(echo "$entry" | sed -n 's/.*gocov CLI \(v[0-9][0-9.]*[0-9]\).*/\1/p' | head -1)
 if [ -n "$baked" ] && [ "$baked" != "$cli" ]; then
   fail "the Dockerfile bakes a different CLI than the changelog claims." \
     "Dockerfile   ARG GOCOV_VERSION=$cli" \
