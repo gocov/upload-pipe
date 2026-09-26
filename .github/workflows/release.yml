@@ -4,7 +4,8 @@ name: release
 # --privileged/QEMU setup buildx multi-arch builds need). On a bare
 # semver tag push (0.1.0): build linux/amd64 + linux/arm64 and push
 # docker.io/gocov/upload-pipe as :0.1.0, the floating major :0 that
-# `pipe: docker://gocov/upload-pipe:0` resolves, and :latest.
+# `pipe: docker://gocov/upload-pipe:0` resolves, and :latest; then create
+# the GitHub release.
 #
 # Also callable with an explicit tag: tag-on-release-merge.yml pushes its
 # tag with GITHUB_TOKEN, and GitHub starts no workflow runs from those
@@ -38,6 +39,8 @@ permissions:
 jobs:
   release:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write # the GitHub release
     env:
       TAG: ${{ inputs.tag || github.ref_name }}
     steps:
@@ -73,3 +76,14 @@ jobs:
             -t "docker.io/gocov/upload-pipe:${major}" \
             -t docker.io/gocov/upload-pipe:latest \
             --push .
+
+      - name: Create the GitHub release
+        # After the image is on Docker Hub, so a release never names an
+        # image that is not there. The notes are the version's
+        # CHANGELOG.md entry, as in gocov-action and gitlab-component.
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          awk -v v="$TAG" '/^## /{f = ($2 == v); next} f' CHANGELOG.md >notes.md
+          [ -s notes.md ] || { echo "CHANGELOG.md has no '## $TAG' entry" >&2; exit 1; }
+          gh release create "$TAG" --title "$TAG" --notes-file notes.md

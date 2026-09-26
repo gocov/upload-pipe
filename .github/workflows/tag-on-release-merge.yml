@@ -2,10 +2,8 @@ name: tag-on-release-merge
 
 # The merge half of the cross-repo bump: a gocov release opens a bump PR
 # here carrying the `release` label, and merging that PR is the release
-# decision — so this tags the merge commit and runs the release workflow.
-# The version is read from pipe.yml, which the bump PR updated and which
-# release.yml asserts against the tag anyway: pipe.yml is the one place
-# the pipe's version is written down.
+# decision — so this tags the merge commit with the version the PR's
+# CHANGELOG.md entry names and runs the release workflow.
 #
 # The tag is pushed with GITHUB_TOKEN, which starts no workflow runs, so
 # release.yml is called directly rather than trusting the tag event.
@@ -35,13 +33,17 @@ jobs:
           fetch-depth: 0
           fetch-tags: true
 
-      - name: Read the version pipe.yml ships
+      - name: Read the version CHANGELOG.md releases
         id: v
+        # The newest `## X.Y.Z` heading is the release, as in gocov-action
+        # and gitlab-component. pipe.yml carries the same version for the
+        # Atlassian catalog; check-pins holds the two together, and
+        # release.yml asserts pipe.yml against the tag.
         run: |
-          tag=$(sed -n 's|^image: gocov/upload-pipe:\([0-9][0-9.]*\)$|\1|p' pipe.yml)
-          [ -n "$tag" ] || { echo "could not read a version from pipe.yml" >&2; exit 1; }
+          tag=$(sed -n 's/^## \([0-9][0-9.]*\) *$/\1/p' CHANGELOG.md | head -1)
+          [ -n "$tag" ] || { echo "no '## X.Y.Z' heading in CHANGELOG.md" >&2; exit 1; }
           if git rev-parse -q --verify "refs/tags/$tag" >/dev/null; then
-            echo "tag $tag already exists — did the bump PR forget to bump pipe.yml?" >&2
+            echo "tag $tag already exists — did the bump PR forget its CHANGELOG entry?" >&2
             exit 1
           fi
           echo "tag=$tag" >> "$GITHUB_OUTPUT"
@@ -81,4 +83,4 @@ jobs:
       tag: ${{ needs.tag.outputs.tag }}
     secrets: inherit
     permissions:
-      contents: read
+      contents: write # the GitHub release
