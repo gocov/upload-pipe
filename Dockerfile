@@ -13,7 +13,7 @@
 # falls back to amd64.
 FROM alpine:3.22 AS fetch
 ARG TARGETARCH
-ARG GOCOV_VERSION=v0.26.1
+ARG GOCOV_VERSION=v0.26.2
 RUN apk add --no-cache curl
 WORKDIR /dl
 RUN arch="${TARGETARCH:-amd64}" && \
