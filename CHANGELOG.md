@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.19.1
+
+- Fix the arm64 image: it baked the amd64 gocov CLI (0.18.0 and 0.19.0 at
+  least), so the pipe failed with an exec format error on arm64 runners.
+  Still gocov CLI v0.26.1.
+
 ## 0.19.0
 
 - Bake gocov CLI v0.26.1 (was v0.26.0).
