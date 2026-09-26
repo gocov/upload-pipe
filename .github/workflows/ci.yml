@@ -29,7 +29,13 @@ jobs:
       - run: shellcheck pipe/pipe.sh test/smoke.sh test/e2e.sh scripts/check-pins.sh
       - run: bash scripts/check-pins.sh
       - name: Build the image
-        run: docker build -t gocov/upload-pipe:ci .
+        # With the platform named, as release.yml builds it: a plain
+        # `docker build` leaves TARGETARCH at the Dockerfile's amd64
+        # default, and the arm64 image would bake the amd64 CLI.
+        run: |
+          docker buildx build --load \
+            --platform "linux/$(docker version -f '{{.Server.Arch}}')" \
+            -t gocov/upload-pipe:ci .
       - name: Smoke tests
         run: bash test/smoke.sh gocov/upload-pipe:ci
       - name: End-to-end upload
