@@ -50,11 +50,15 @@ jobs:
           echo "releasing $tag"
 
       - name: Tag the merge commit
+        # Values reach the shell through env, never spliced into the script.
+        env:
+          TAG: ${{ steps.v.outputs.tag }}
+          SHA: ${{ github.event.pull_request.merge_commit_sha }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git tag "${{ steps.v.outputs.tag }}" "${{ github.event.pull_request.merge_commit_sha }}"
-          git push origin "refs/tags/${{ steps.v.outputs.tag }}"
+          git tag "$TAG" "$SHA"
+          git push origin "refs/tags/$TAG"
 
       - name: Mirror to Bitbucket
         # The Atlassian pipe catalog reads the Bitbucket repo, and a tag
@@ -81,6 +85,9 @@ jobs:
     uses: ./.github/workflows/release.yml
     with:
       tag: ${{ needs.tag.outputs.tag }}
-    secrets: inherit
+    # Only the two it uses, for the Docker Hub push.
+    secrets:
+      DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+      DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
     permissions:
       contents: write # the GitHub release
