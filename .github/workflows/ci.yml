@@ -29,9 +29,8 @@ jobs:
       - run: shellcheck pipe/pipe.sh test/smoke.sh test/e2e.sh scripts/check-pins.sh
       - run: bash scripts/check-pins.sh
       - name: Build the image
-        # With the platform named, as release.yml builds it: a plain
-        # `docker build` leaves TARGETARCH at the Dockerfile's amd64
-        # default, and the arm64 image would bake the amd64 CLI.
+        # With the platform named, as release.yml builds it. On the arm64
+        # runner, e2e.sh then proves the arm64 image bakes the arm64 CLI.
         run: |
           docker buildx build --load \
             --platform "linux/$(docker version -f '{{.Server.Arch}}')" \
