@@ -3,22 +3,27 @@
 # anything at runtime. The image tag is the pipe version; the CLI version
 # is pinned per image via GOCOV_VERSION.
 #
-# TARGETARCH is set automatically by buildx for multi-arch builds
-# (linux/amd64 + linux/arm64); the default keeps plain `docker build`
-# working on classic builders (e.g. Bitbucket Cloud CI, which has no
-# buildx — the multi-arch release build runs on the GitHub mirror).
+# TARGETARCH is set automatically by BuildKit (buildx, and plain
+# `docker build` on current Docker) to the platform being built. It is
+# declared with no default on purpose: a default in the ARG line wins
+# over the automatic value, which is how the published arm64 images
+# (0.18.0 and 0.19.0 at least) shipped the amd64 CLI. Classic builders
+# (e.g. Bitbucket Cloud CI, which has no buildx — the multi-arch release
+# build runs on the GitHub mirror) leave it empty, and the RUN below
+# falls back to amd64.
 FROM alpine:3.22 AS fetch
-ARG TARGETARCH=amd64
+ARG TARGETARCH
 ARG GOCOV_VERSION=v0.26.1
 RUN apk add --no-cache curl
 WORKDIR /dl
-RUN base="https://github.com/gocov/gocov/releases/download/${GOCOV_VERSION}" && \
-    curl -fsSL --retry 3 --retry-delay 2 -O "${base}/gocov-linux-${TARGETARCH}" && \
+RUN arch="${TARGETARCH:-amd64}" && \
+    base="https://github.com/gocov/gocov/releases/download/${GOCOV_VERSION}" && \
+    curl -fsSL --retry 3 --retry-delay 2 -O "${base}/gocov-linux-${arch}" && \
     curl -fsSL --retry 3 --retry-delay 2 -O "${base}/checksums.txt" && \
-    want="$(awk -v f="gocov-linux-${TARGETARCH}" '$2 == f' checksums.txt)" && \
+    want="$(awk -v f="gocov-linux-${arch}" '$2 == f' checksums.txt)" && \
     [ -n "$want" ] && \
     echo "$want" | sha256sum -c - && \
-    mv "gocov-linux-${TARGETARCH}" gocov && \
+    mv "gocov-linux-${arch}" gocov && \
     chmod +x gocov
 
 FROM alpine:3.22
