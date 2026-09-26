@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.20.0
+
+- Bake gocov CLI v0.26.2 (was v0.26.1).
+
 ## 0.19.1
 
 - Fix the arm64 image: it baked the amd64 gocov CLI (0.18.0 and 0.19.0 at
