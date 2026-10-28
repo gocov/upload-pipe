@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.33.0
+
+- Bake gocov CLI v0.31.0 (was v0.30.1).
+
 ## 0.32.0
 
 - Bake gocov CLI v0.30.1 (was v0.30.0).
