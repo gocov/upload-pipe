@@ -2,6 +2,10 @@
 
 ## 0.39.0
 
+- Bake gocov CLI v0.37.0 (was v0.36.0).
+
+## 0.39.0
+
 - Add the IGNORE variable: glob patterns for files to leave out of the
   report, on top of the repository's own Ignored files setting.
 - Lead the README with tokenless OIDC uploads and name the languages the
