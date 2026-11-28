@@ -1,10 +1,11 @@
 #!/usr/bin/env bash
 # Pipe entrypoint: expands the comma-separated globs in $FILES and runs
-# `gocov upload` for each match. The token and server reach the CLI via
-# $GOCOV_TOKEN and $GOCOV_SERVER (never argv, so they cannot leak through
-# process listings); repo/commit/branch/PR are auto-detected by the CLI
-# from the Bitbucket Pipelines environment. The CLI binary is baked into
-# the image at build time — nothing is downloaded at runtime.
+# `gocov upload` for each match, with $PART and $IGNORE as its flags. The
+# token and server reach the CLI via $GOCOV_TOKEN and $GOCOV_SERVER (never
+# argv, so they cannot leak through process listings); repo/commit/branch/PR
+# are auto-detected by the CLI from the Bitbucket Pipelines environment. The
+# CLI binary is baked into the image at build time — nothing is downloaded
+# at runtime.
 set -eo pipefail
 
 FAIL_ON_ERROR=${FAIL_ON_ERROR:-true}
@@ -70,6 +71,9 @@ done
 
 args=()
 [ -n "${PART:-}" ] && args+=(-part "$PART")
+# One -ignore carries the whole list: the CLI splits it on commas, and on
+# newlines should a value arrive with them.
+[ -n "${IGNORE:-}" ] && args+=(-ignore "$IGNORE")
 
 failures=0
 for f in "${files[@]}"; do

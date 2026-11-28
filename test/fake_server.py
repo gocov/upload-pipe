@@ -4,7 +4,8 @@
 Answers POST /api/v1/upload the way the real server does on success
 (201 + the JSON the CLI prints from) and writes what it received —
 the Authorization header and every multipart field — to <out>/request.json,
-so the test can assert on what the pinned CLI actually sent.
+so the test can assert on what the pinned CLI actually sent. Each request
+overwrites the file, so a test reads it after every upload it makes.
 
     fake_server.py <port> <out-dir>
 """
@@ -26,10 +27,16 @@ class Handler(BaseHTTPRequestHandler):
         body = self.rfile.read(int(self.headers["Content-Length"]))
         msg = email.parser.BytesParser(policy=email.policy.HTTP).parsebytes(
             b"Content-Type: " + self.headers["Content-Type"].encode() + b"\r\n\r\n" + body)
+        # A field the CLI repeats (one `ignore` per pattern) is kept as a
+        # list; every other field is a plain string.
         fields = {}
         for part in msg.iter_parts():
-            fields[part.get_param("name", header="content-disposition")] = \
-                part.get_payload(decode=True).decode()
+            name = part.get_param("name", header="content-disposition")
+            value = part.get_payload(decode=True).decode()
+            if name == "ignore":
+                fields.setdefault(name, []).append(value)
+            else:
+                fields[name] = value
         with open(os.path.join(out, "request.json"), "w") as f:
             json.dump({"authorization": self.headers.get("Authorization", ""),
                        "fields": fields}, f, indent=2)

@@ -31,6 +31,8 @@ variables:
     default: ""
   - name: PART
     default: ""
+  - name: IGNORE
+    default: ""
   - name: SERVER
     default: https://app.gocov.dev
   - name: FAIL_ON_ERROR
